@@ -9,8 +9,13 @@ def get_news(url, source_name, selector, class_name):
         soup = BeautifulSoup(response.content, 'html.parser')
         news_items = []
         
-        for item in soup.find_all(selector, class_=class_name, limit=5):
+        # Otsime pealkirju
+        found_elements = soup.find_all(selector, class_=class_name, limit=8)
+        
+        for item in found_elements:
             title = item.get_text(strip=True)
+            if len(title) < 15: continue # Väldime liiga lühikesi tekste
+            
             link_tag = item.find('a') if item.name != 'a' else item
             link = link_tag['href'] if link_tag and link_tag.has_attr('href') else url
             
@@ -20,7 +25,7 @@ def get_news(url, source_name, selector, class_name):
             news_items.append({"allikas": source_name, "pealkiri": title, "link": link})
         return news_items
     except Exception as e:
-        print(f"Viga {source_name} kraapimisel: {e}")
+        print(f"Viga {source_name}: {e}")
         return []
 
 if __name__ == "__main__":
@@ -38,4 +43,4 @@ if __name__ == "__main__":
     
     with open('uudised.json', 'w', encoding='utf-8') as f:
         json.dump(koik_uudised, f, ensure_ascii=False, indent=4)
-    print("Uudised salvestatud!")
+    print(f"Salvestatud {len(koik_uudised)} uudist!")
