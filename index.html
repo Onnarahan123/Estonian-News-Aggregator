@@ -2,58 +2,136 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minu Uudisteportaal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Uudised">
+    
+    <title>Eesti Uudised</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f0f2f5; padding: 15px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        h1 { text-align: center; color: #1a1a1a; margin-bottom: 5px; }
-        .uuendus-aeg { text-align: center; font-size: 0.8em; color: #666; margin-bottom: 20px; }
-        .uudis { background: white; padding: 15px; margin-bottom: 10px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .allikas { font-weight: bold; color: #007bff; font-size: 0.8em; text-transform: uppercase; }
-        .pealkiri { display: block; margin-top: 5px; color: #333; text-decoration: none; font-size: 1.1em; line-height: 1.3; }
-        .veateade { text-align: center; color: #d63031; padding: 20px; }
+        :root {
+            --bg-color: #f2f2f7;
+            --card-bg: #ffffff;
+            --text-color: #000000;
+            --meta-color: #666666;
+            --shadow: rgba(0,0,0,0.05);
+        }
+
+        /* Tume režiim (automaatne, kui telefon on tumedas režiimis) */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #000000;
+                --card-bg: #1c1c1e;
+                --text-color: #ffffff;
+                --meta-color: #98989d;
+                --shadow: rgba(255,255,255,0.05);
+            }
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-color);
+            margin: 0; 
+            padding: 20px 15px; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        h1 { 
+            text-align: center; 
+            font-size: 28px; 
+            font-weight: 800; 
+            margin-top: 40px; 
+            margin-bottom: 5px; 
+        }
+
+        .uuendus-aeg { 
+            text-align: center; 
+            font-size: 13px; 
+            color: var(--meta-color); 
+            margin-bottom: 30px; 
+            font-weight: 500;
+        }
+
+        .uudis { 
+            background-color: var(--card-bg); 
+            padding: 16px; 
+            margin-bottom: 12px; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 12px var(--shadow); 
+            transition: transform 0.2s;
+            display: block;
+            text-decoration: none;
+        }
+
+        .uudis:active {
+            transform: scale(0.98);
+        }
+
+        .allikas-silt { 
+            font-size: 11px; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            color: #007aff; 
+            margin-bottom: 6px; 
+            display: block;
+        }
+
+        .pealkiri { 
+            font-size: 17px; 
+            font-weight: 600; 
+            line-height: 1.4; 
+            color: var(--text-color);
+            display: block;
+        }
+
+        /* Värvilised allikad */
+        .err { color: #0054a6; }
+        .delfi { color: #ff9900; }
+        .postimees { color: #009FE3; }
+        .eestinen { color: #e11d48; }
+
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Värsked Uudised</h1>
-        <p id="aeg" class="uuendus-aeg">Laen...</p>
-        <div id="uudiste-konteiner">Laen andmeid...</div>
-    </div>
+    <h1>Eesti Uudised</h1>
+    <div id="aeg" class="uuendus-aeg">Laen...</div>
+    <div id="uudiste-konteiner"></div>
 
     <script>
-        // See number ?v=... sunnib brauserit uut faili laadima
         fetch('uudised.json?v=' + new Date().getTime())
-            .then(response => {
-                if (!response.ok) throw new Error("Faili ei leitud");
-                return response.json();
-            })
+            .then(res => res.json())
             .then(data => {
                 const container = document.getElementById('uudiste-konteiner');
                 const aeg = document.getElementById('aeg');
                 container.innerHTML = '';
                 
-                // Paneme kellaaja paika (praegune hetk)
                 const now = new Date();
-                aeg.innerText = "Viimati vaadatud: " + now.getHours() + ":" + (now.getMinutes()<10?'0':'') + now.getMinutes();
-
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<p class="veateade">Andmed on tühjad. Oota, kuni Action lõpetab töö.</p>';
-                    return;
-                }
+                aeg.innerText = "Uuendatud: " + now.getHours() + ":" + (now.getMinutes()<10?'0':'') + now.getMinutes();
 
                 data.forEach(uudis => {
-                    const div = document.createElement('div');
-                    div.className = 'uudis';
-                    div.innerHTML = `<span class="allikas">${uudis.allikas}</span>
-                                     <a class="pealkiri" href="${uudis.link}" target="_blank">${uudis.pealkiri}</a>`;
-                    container.appendChild(div);
+                    // Määrame värvi vastavalt allikale
+                    let allikaKlass = 'allikas-silt';
+                    if (uudis.allikas === 'ERR') allikaKlass += ' err';
+                    else if (uudis.allikas === 'Delfi') allikaKlass += ' delfi';
+                    else if (uudis.allikas === 'Postimees') allikaKlass += ' postimees';
+                    else if (uudis.allikas === 'Eestinen') allikaKlass += ' eestinen';
+
+                    // Teeme terve kaardi lingiks
+                    const a = document.createElement('a');
+                    a.className = 'uudis';
+                    a.href = uudis.link;
+                    a.target = "_blank"; // Avab uudise uues aknas
+                    a.innerHTML = `
+                        <span class="${allikaKlass}">${uudis.allikas}</span>
+                        <span class="pealkiri">${uudis.pealkiri}</span>
+                    `;
+                    container.appendChild(a);
                 });
             })
-            .catch(err => {
-                document.getElementById('uudiste-konteiner').innerHTML = '<p class="veateade">Viga! Kas uudised.json on ikka [ ] kujul?</p>';
-                console.error(err);
+            .catch(e => {
+                document.getElementById('aeg').innerText = "Viga andmete laadimisel";
             });
     </script>
 </body>
