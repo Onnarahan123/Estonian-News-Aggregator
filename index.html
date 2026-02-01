@@ -3,47 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eesti Uudiste Koondaja</title>
+    <title>Minu Uudisteportaal</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f0f2f5; padding: 15px; margin: 0; }
-        h1 { color: #1a1a1a; text-align: center; font-size: 1.5rem; margin-bottom: 20px; }
+        body { font-family: -apple-system, sans-serif; background: #f0f2f5; padding: 15px; }
         .container { max-width: 600px; margin: 0 auto; }
-        .uudis { background: white; padding: 15px; margin-bottom: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid #007bff; }
-        .allikas { font-size: 0.75rem; color: #65676b; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-        .pealkiri { text-decoration: none; color: #050505; font-size: 1.1rem; display: block; margin-top: 6px; font-weight: 500; line-height: 1.3; }
-        .pealkiri:active { color: #007bff; }
-        .footer { text-align: center; font-size: 0.8rem; color: #888; margin-top: 20px; }
+        h1 { text-align: center; color: #1a1a1a; }
+        .uuendus-aeg { text-align: center; font-size: 0.8em; color: #666; margin-bottom: 20px; }
+        .uudis { background: white; padding: 15px; margin-bottom: 10px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .allikas { font-weight: bold; color: #007bff; font-size: 0.8em; text-transform: uppercase; }
+        .pealkiri { display: block; margin-top: 5px; color: #333; text-decoration: none; font-size: 1.1em; line-height: 1.3; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Värsked Uudised</h1>
-        <div id="uudiste-konteiner">Laen värskeid uudiseid...</div>
-        <div class="footer">Uuendatakse automaatselt</div>
+        <div id="uudiste-konteiner">Laen andmeid...</div>
     </div>
 
     <script>
-        fetch('uudised.json')
+        // Lisame URL-ile suvalise numbri, et brauser ei näitaks vana mälus olevat faili
+        fetch('uudised.json?v=' + new Date().getTime())
             .then(response => response.json())
             .then(data => {
                 const container = document.getElementById('uudiste-konteiner');
                 container.innerHTML = '';
-                if (data.length === 0) {
-                    container.innerHTML = 'Uudiseid hetkel pole. Oota, kuni skript käivitub.';
+                
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p style="text-align:center;">Andmed on tühjad. Proovi Actionit uuesti käivitada.</p>';
                     return;
                 }
+
                 data.forEach(uudis => {
                     const div = document.createElement('div');
                     div.className = 'uudis';
-                    div.innerHTML = `
-                        <span class="allikas">${uudis.allikas}</span>
-                        <a class="pealkiri" href="${uudis.link}" target="_blank">${uudis.pealkiri}</a>
-                    `;
+                    div.innerHTML = `<span class="allikas">${uudis.allikas}</span>
+                                     <a class="pealkiri" href="${uudis.link}" target="_blank">${uudis.pealkiri}</a>`;
                     container.appendChild(div);
                 });
             })
             .catch(err => {
-                document.getElementById('uudiste-konteiner').innerHTML = 'Viga andmete laadimisel. Kas uudised.json on olemas?';
+                document.getElementById('uudiste-konteiner').innerHTML = 'Viga laadimisel. Kontrolli, kas uudised.json on olemas.';
             });
     </script>
 </body>
