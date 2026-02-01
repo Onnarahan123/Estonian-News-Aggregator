@@ -1,61 +1,55 @@
 import requests
 from bs4 import BeautifulSoup
 import json
-import random
-import time
 
-def get_html(url):
-    # Kasutame erinevaid "User-Agent" päiseid, et mitte vahele jääda
-    user_agents = [
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Safari/605.1.15',
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1'
-    ]
-    headers = {'User-Agent': random.choice(user_agents)}
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        return response.content
-    except:
-        return None
-
-def korja_uudised():
+def get_rss_news(feed_url, source_name):
     uudised = []
+    headers = {'User-Agent': 'Mozilla/5.0 (compatible; UudisteBot/1.0)'}
     
-    # 1. ERR (Väga lihtne struktuur)
-    print("Kogun ERR...")
-    content = get_html("https://www.err.ee/")
-    if content:
-        soup = BeautifulSoup(content, 'html.parser')
-        for link in soup.select('header h2 a, header h1 a')[:5]:
-            uudised.append({
-                "allikas": "ERR",
-                "pealkiri": link.get_text(strip=True),
-                "link": link['href']
-            })
-
-    # 2. Delfi
-    print("Kogun Delfi...")
-    content = get_html("https://www.delfi.ee/")
-    if content:
-        soup = BeautifulSoup(content, 'html.parser')
-        for link in soup.select('h1 a, h3 a')[:5]:
-            title = link.get_text(strip=True)
-            if len(title) > 20: # Ainult pikemad pealkirjad
+    try:
+        print(f"Loen RSS voogu: {source_name}...")
+        response = requests.get(feed_url, headers=headers, timeout=10)
+        # Kasutame 'xml' parserit, sest RSS on XML formaadis
+        soup = BeautifulSoup(response.content, 'xml')
+        
+        # RSS-is on uudised <item> siltide vahel
+        items = soup.find_all('item', limit=5)
+        
+        for item in items:
+            title = item.title.get_text(strip=True)
+            link = item.link.get_text(strip=True)
+            
+            # Puhastame linke (mõnikord on seal tühikuid)
+            if link:
                 uudised.append({
-                    "allikas": "Delfi",
+                    "allikas": source_name,
                     "pealkiri": title,
-                    "link": link['href']
+                    "link": link
                 })
+    except Exception as e:
+        print(f"Viga {source_name}-ga: {e}")
 
     return uudised
 
 if __name__ == "__main__":
-    andmed = korja_uudised()
+    koik_uudised = []
     
-    # Kui ikka midagi ei leidnud, paneme test-uudise, et näha kas torud töötavad
-    if not andmed:
-        andmed = [{"allikas": "Test", "pealkiri": "Süsteem töötab, aga uudiseid ei leitud.", "link": "#"}]
+    # Need on ametlikud RSS vood
+    rss_allikad = [
+        ("https://www.err.ee/rss", "ERR"),
+        ("https://rss.postimees.ee/?section=81", "Postimees"), 
+        ("https://feeds.delfi.ee/rss/delfi/uudised", "Delfi"),
+        ("https://eestinen.fi/feed/", "Eestinen")
+    ]
     
+    for url, nimi in rss_allikad:
+        koik_uudised.extend(get_rss_news(url, nimi))
+    
+    # Kui ikka on tühi (väga ebatõenäoline), siis paneme testi
+    if not koik_uudised:
+        koik_uudised.append({"allikas": "Süsteem", "pealkiri": "Viga: Ühtegi RSS voogu ei leitud.", "link": "#"})
+
     with open('uudised.json', 'w', encoding='utf-8') as f:
-        json.dump(andmed, f, ensure_ascii=False, indent=4)
-    print(f"Kokku saime {len(andmed)} kirjet.")
+        json.dump(koik_uudised, f, ensure_ascii=False, indent=4)
+    
+    print(f"Valmis! Salvestasin {len(koik_uudised)} uudist.")
