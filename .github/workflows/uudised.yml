@@ -1,0 +1,26 @@
+name: Uuenda uudiseid
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout kood
+        uses: actions/checkout@v3
+      - name: Seadista Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Installi asjad
+        run: pip install -r requirements.txt
+      - name: Käivita skript
+        run: python scraper.py
+      - name: Salvesta muudatused
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add uudised.json
+          git commit -m "Uuendatud uudised" || exit 0
+          git push
