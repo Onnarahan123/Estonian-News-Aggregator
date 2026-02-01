@@ -2,137 +2,266 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Uudised">
+    <meta name="theme-color" content="#f2f2f7">
+    <link rel="apple-touch-icon" href="icon.png"> 
     
-    <title>Eesti Uudised</title>
+    <title>Uudised</title>
     <style>
         :root {
-            --bg-color: #f2f2f7;
-            --card-bg: #ffffff;
-            --text-color: #000000;
-            --meta-color: #666666;
-            --shadow: rgba(0,0,0,0.05);
+            --bg: #f2f2f7;
+            --card: #ffffff;
+            --text-main: #000000;
+            --text-sub: #8e8e93;
+            --border: rgba(0,0,0,0.05);
+            --active-chip: #007aff;
+            --active-text: #ffffff;
+            --inactive-chip: #e5e5ea;
+            --inactive-text: #000000;
         }
 
-        /* Tume režiim (automaatne, kui telefon on tumedas režiimis) */
         @media (prefers-color-scheme: dark) {
             :root {
-                --bg-color: #000000;
-                --card-bg: #1c1c1e;
-                --text-color: #ffffff;
-                --meta-color: #98989d;
-                --shadow: rgba(255,255,255,0.05);
+                --bg: #000000;
+                --card: #1c1c1e;
+                --text-main: #ffffff;
+                --text-sub: #98989d;
+                --border: rgba(255,255,255,0.1);
+                --active-chip: #0a84ff;
+                --inactive-chip: #2c2c2e;
+                --inactive-text: #ffffff;
             }
         }
 
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
-            background-color: var(--bg-color); 
-            color: var(--text-color);
-            margin: 0; 
-            padding: 20px 15px; 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 0;
+            color: var(--text-main);
             -webkit-tap-highlight-color: transparent;
+            padding-bottom: 40px; /* Ruumi alla */
         }
 
-        h1 { 
-            text-align: center; 
-            font-size: 28px; 
-            font-weight: 800; 
-            margin-top: 40px; 
-            margin-bottom: 5px; 
+        /* Ujuv päis (Glassmorphism) */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding-top: env(safe-area-inset-top);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            .header { background: rgba(28, 28, 30, 0.85); }
         }
 
-        .uuendus-aeg { 
-            text-align: center; 
-            font-size: 13px; 
-            color: var(--meta-color); 
-            margin-bottom: 30px; 
+        .header-top {
+            padding: 10px 20px 5px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 34px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .uuendatud {
+            font-size: 12px;
+            color: var(--text-sub);
             font-weight: 500;
         }
 
-        .uudis { 
-            background-color: var(--card-bg); 
-            padding: 16px; 
-            margin-bottom: 12px; 
-            border-radius: 16px; 
-            box-shadow: 0 4px 12px var(--shadow); 
-            transition: transform 0.2s;
+        /* Filtrite rida */
+        .filters {
+            display: flex;
+            overflow-x: auto;
+            padding: 10px 20px 15px 20px;
+            gap: 10px;
+            scrollbar-width: none; /* Peida scrollbar */
+        }
+        .filters::-webkit-scrollbar { display: none; }
+
+        .chip {
+            background: var(--inactive-chip);
+            color: var(--inactive-text);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .chip.active {
+            background: var(--active-chip);
+            color: var(--active-text);
+            box-shadow: 0 4px 10px rgba(0,122,255,0.3);
+        }
+
+        /* Uudiste konteiner */
+        .container {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .uudis {
+            background: var(--card);
+            padding: 16px;
+            margin-bottom: 16px;
+            border-radius: 18px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             display: block;
             text-decoration: none;
+            position: relative;
+            transition: transform 0.1s;
+        }
+        
+        .uudis:active { transform: scale(0.97); }
+
+        .meta {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
         }
 
-        .uudis:active {
-            transform: scale(0.98);
+        .source-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
         }
 
-        .allikas-silt { 
-            font-size: 11px; 
-            font-weight: 700; 
-            text-transform: uppercase; 
-            color: #007aff; 
-            margin-bottom: 6px; 
+        .source-name {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-sub);
+            letter-spacing: 0.5px;
+        }
+
+        .pealkiri {
+            font-size: 17px;
+            font-weight: 600;
+            line-height: 1.4;
+            color: var(--text-main);
             display: block;
         }
 
-        .pealkiri { 
-            font-size: 17px; 
-            font-weight: 600; 
-            line-height: 1.4; 
-            color: var(--text-color);
-            display: block;
-        }
+        /* Värvid */
+        .dot-err { background-color: #0054a6; }
+        .dot-delfi { background-color: #ff9900; }
+        .dot-postimees { background-color: #009FE3; }
+        .dot-eestinen { background-color: #e11d48; }
+        .dot-muu { background-color: #8e8e93; }
 
-        /* Värvilised allikad */
-        .err { color: #0054a6; }
-        .delfi { color: #ff9900; }
-        .postimees { color: #009FE3; }
-        .eestinen { color: #e11d48; }
+        .loading { text-align: center; color: var(--text-sub); margin-top: 50px; }
 
     </style>
 </head>
 <body>
-    <h1>Eesti Uudised</h1>
-    <div id="aeg" class="uuendus-aeg">Laen...</div>
-    <div id="uudiste-konteiner"></div>
+
+    <div class="header">
+        <div class="header-top">
+            <h1>Uudised</h1>
+            <span id="kell" class="uuendatud">...</span>
+        </div>
+        <div class="filters">
+            <button class="chip active" onclick="filterNews('Kõik', this)">Kõik</button>
+            <button class="chip" onclick="filterNews('ERR', this)">ERR</button>
+            <button class="chip" onclick="filterNews('Delfi', this)">Delfi</button>
+            <button class="chip" onclick="filterNews('Postimees', this)">Postimees</button>
+            <button class="chip" onclick="filterNews('Eestinen', this)">Eestinen</button>
+        </div>
+    </div>
+
+    <div id="konteiner" class="container">
+        <div class="loading">Laen värskeid uudiseid...</div>
+    </div>
 
     <script>
+        let allNewsData = [];
+
+        // Laeme andmed
         fetch('uudised.json?v=' + new Date().getTime())
             .then(res => res.json())
             .then(data => {
-                const container = document.getElementById('uudiste-konteiner');
-                const aeg = document.getElementById('aeg');
-                container.innerHTML = '';
+                allNewsData = data;
+                renderNews(allNewsData); // Näita alguses kõiki
                 
+                // Kellaaeg
                 const now = new Date();
-                aeg.innerText = "Uuendatud: " + now.getHours() + ":" + (now.getMinutes()<10?'0':'') + now.getMinutes();
-
-                data.forEach(uudis => {
-                    // Määrame värvi vastavalt allikale
-                    let allikaKlass = 'allikas-silt';
-                    if (uudis.allikas === 'ERR') allikaKlass += ' err';
-                    else if (uudis.allikas === 'Delfi') allikaKlass += ' delfi';
-                    else if (uudis.allikas === 'Postimees') allikaKlass += ' postimees';
-                    else if (uudis.allikas === 'Eestinen') allikaKlass += ' eestinen';
-
-                    // Teeme terve kaardi lingiks
-                    const a = document.createElement('a');
-                    a.className = 'uudis';
-                    a.href = uudis.link;
-                    a.target = "_blank"; // Avab uudise uues aknas
-                    a.innerHTML = `
-                        <span class="${allikaKlass}">${uudis.allikas}</span>
-                        <span class="pealkiri">${uudis.pealkiri}</span>
-                    `;
-                    container.appendChild(a);
-                });
+                document.getElementById('kell').innerText = 
+                    `${now.getHours()}:${(now.getMinutes()<10?'0':'') + now.getMinutes()}`;
             })
             .catch(e => {
-                document.getElementById('aeg').innerText = "Viga andmete laadimisel";
+                document.getElementById('konteiner').innerHTML = 
+                    '<div class="loading">Viga laadimisel. Proovi hiljem uuesti.</div>';
             });
+
+        // Funktsioon uudiste joonistamiseks
+        function renderNews(newsList) {
+            const container = document.getElementById('konteiner');
+            container.innerHTML = '';
+
+            if (newsList.length === 0) {
+                container.innerHTML = '<div class="loading">Selles kategoorias uudiseid pole.</div>';
+                return;
+            }
+
+            newsList.forEach(uudis => {
+                // Määrame värvi täpi jaoks
+                let dotClass = 'dot-muu';
+                if (uudis.allikas === 'ERR') dotClass = 'dot-err';
+                else if (uudis.allikas === 'Delfi') dotClass = 'dot-delfi';
+                else if (uudis.allikas === 'Postimees') dotClass = 'dot-postimees';
+                else if (uudis.allikas === 'Eestinen') dotClass = 'dot-eestinen';
+
+                const a = document.createElement('a');
+                a.className = 'uudis';
+                a.href = uudis.link;
+                a.target = "_blank"; // Avab brauseris
+                
+                a.innerHTML = `
+                    <div class="meta">
+                        <div class="source-dot ${dotClass}"></div>
+                        <span class="source-name">${uudis.allikas}</span>
+                    </div>
+                    <span class="pealkiri">${uudis.pealkiri}</span>
+                `;
+                container.appendChild(a);
+            });
+        }
+
+        // Filtreerimise loogika
+        function filterNews(source, btn) {
+            // Nuppude värvi muutmine
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Sisu filtreerimine
+            if (source === 'Kõik') {
+                renderNews(allNewsData);
+            } else {
+                const filtered = allNewsData.filter(u => u.allikas === source);
+                renderNews(filtered);
+            }
+            
+            // Kerib üles tagasi
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
     </script>
 </body>
 </html>
