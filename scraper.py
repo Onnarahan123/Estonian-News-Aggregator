@@ -4,25 +4,27 @@ import json
 
 def get_rss_news(feed_url, source_name):
     uudised = []
-    headers = {'User-Agent': 'Mozilla/5.0 (compatible; UudisteBot/1.0)'}
+    # Maskeering, et Delfi meid sisse laseks
+    headers = {'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'}
     
     try:
-        print(f"Loen RSS voogu: {source_name}...")
+        print(f"Loen: {source_name} ({feed_url})...")
         response = requests.get(feed_url, headers=headers, timeout=10)
-        # Kasutame 'xml' parserit, sest RSS on XML formaadis
+        
+        # 'xml' parser on RSS jaoks parim
         soup = BeautifulSoup(response.content, 'xml')
         
-        # RSS-is on uudised <item> siltide vahel
+        # Võtame igast kanalist max 5 värskemat uudist
         items = soup.find_all('item', limit=5)
         
         for item in items:
             title = item.title.get_text(strip=True)
             link = item.link.get_text(strip=True)
             
-            # Puhastame linke (mõnikord on seal tühikuid)
+            # Puhastame linke
             if link:
                 uudised.append({
-                    "allikas": source_name,
+                    "allikas": source_name, # Kõik lähevad "Delfi" nime alla
                     "pealkiri": title,
                     "link": link
                 })
@@ -34,22 +36,32 @@ def get_rss_news(feed_url, source_name):
 if __name__ == "__main__":
     koik_uudised = []
     
-    # Need on ametlikud RSS vood
+    # SIIN ON UUS ALLIKATE NIMEKIRI
     rss_allikad = [
+        # ERR
         ("https://www.err.ee/rss", "ERR"),
+        
+        # Postimees
         ("https://rss.postimees.ee/?section=81", "Postimees"), 
-        ("https://feeds.delfi.ee/rss/delfi/uudised", "Delfi"),
-        ("https://eestinen.fi/feed/", "Eestinen")
+        
+        # Eestinen
+        ("https://eestinen.fi/feed/", "Eestinen"),
+        
+        # --- DELFI PAKETT ---
+        ("https://feeds.delfi.ee/rss/delfi/uudised", "Delfi"),  # Peauudised
+        ("https://feeds.delfi.ee/rss/delfi/majandus", "Delfi"), # Ärileht
+        ("https://feeds.delfi.ee/rss/delfi/sport", "Delfi"),    # Sport
+        ("https://feeds.delfi.ee/rss/delfi/forte", "Delfi")     # Teadus
     ]
     
     for url, nimi in rss_allikad:
         koik_uudised.extend(get_rss_news(url, nimi))
     
-    # Kui ikka on tühi (väga ebatõenäoline), siis paneme testi
+    # Turvavõrk, et fail kunagi tühi ei oleks
     if not koik_uudised:
-        koik_uudised.append({"allikas": "Süsteem", "pealkiri": "Viga: Ühtegi RSS voogu ei leitud.", "link": "#"})
+        koik_uudised.append({"allikas": "Süsteem", "pealkiri": "Hetkel uudiseid ei saadud kätte.", "link": "#"})
 
     with open('uudised.json', 'w', encoding='utf-8') as f:
         json.dump(koik_uudised, f, ensure_ascii=False, indent=4)
     
-    print(f"Valmis! Salvestasin {len(koik_uudised)} uudist.")
+    print(f"Valmis! Salvestasin kokku {len(koik_uudised)} uudist.")
